@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from .api_models import *
 from .models import db, User, Quiz, QuizAttempt, QuizProgress, Questions, Answers, Story
 from flask import request
+from .schemas import UserSchema, QuizSchema, QuizAttemptSchema, QuizProgressSchema, QuestionSchema, AnswerSchema, StorySchema
 
 authorizations = {
     'apikey': {
@@ -15,9 +16,11 @@ authorizations = {
 user_ns = Namespace('user', description='Operaciones relacionadas con usuarios', authorizations=authorizations)
 quiz_ns = Namespace('quiz', description='Operaciones relacionadas con cuestionarios')
 attempt_ns = Namespace('attempt', description='Operaciones relacionadas con intentos de cuestionarios')
+progress_ns = Namespace('progress', description='Operaciones relacionadas con el progreso de cuestionarios')
 question_ns = Namespace('question', description='Operaciones relacionadas con preguntas')
 answer_ns = Namespace('answer', description='Operaciones relacionadas con respuestas')
 story_ns = Namespace('story', description='Operaciones relacionadas con historias')
+
 
 @user_ns.route('/')
 class UserList(Resource):
@@ -25,14 +28,19 @@ class UserList(Resource):
     @api.doc(security='apikey')
     @user_ns.marshal_list_with(user_model)
     def get(self):
-        print(get_jwt_identity())
         users = User.query.all()
         return users
-
-    @user_ns.expect(user_model)
-    @user_ns.marshal_with(user_model, code=201)
+    
+    method_decorators = [jwt_required()]
+    @api.doc(security='apikey')
+    @user_ns.expect(user_put_model)
+    @user_ns.marshal_with(user_put_model, code=201)
     def post(self):
         data = request.json
+        user_schema = UserSchema()
+        errors = user_schema.validate(data)
+        if errors:
+            return errors, 400
         new_user = User(username=data['username'], email=data['email'], password=data['password'])
         db.session.add(new_user)
         db.session.commit()
@@ -50,6 +58,10 @@ class UserDetail(Resource):
     def put(self, user_id):
         user = User.query.get_or_404(user_id)
         data = request.json
+        user_schema = UserSchema()
+        errors = user_schema.validate(data)
+        if errors:
+            return errors, 400
         user.username = data['username']
         user.email = data['email']
         user.password = data['password']
@@ -69,10 +81,14 @@ class QuizList(Resource):
         quizzes = Quiz.query.all()
         return quizzes
 
-    @quiz_ns.expect(quiz_model)
-    @quiz_ns.marshal_with(quiz_model, code=201)
+    @quiz_ns.expect(quiz_put_model)
+    @quiz_ns.marshal_with(quiz_put_model, code=201)
     def post(self):
         data = request.json
+        quiz_schema = QuizSchema()
+        errors = quiz_schema.validate(data)
+        if errors:
+            return errors, 400
         new_quiz = Quiz(
             difficulty_level=data['difficulty_level'],
             title=data['title']
@@ -93,6 +109,9 @@ class QuizDetail(Resource):
     def put(self, quiz_id):
         quiz = Quiz.query.get_or_404(quiz_id)
         data = request.json
+        errors = QuizSchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
         quiz.difficulty_level = data['difficulty_level']
         quiz.title = data['title']
         db.session.commit()
@@ -115,6 +134,9 @@ class QuizAttemptList(Resource):
     @attempt_ns.marshal_with(attempt_model, code=201)
     def post(self):
         data = request.json
+        errors = QuizAttemptSchema.validate(data)
+        if errors:
+            return errors, 400
         new_attempt = QuizAttempt(
             user_id=data['user_id'],
             quiz_id=data['quiz_id'],
@@ -137,6 +159,9 @@ class QuizAttemptDetail(Resource):
     def put(self, attempt_id):
         attempt = QuizAttempt.query.get_or_404(attempt_id)
         data = request.json
+        errors = QuizAttemptSchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
         attempt.user_id = data['user_id']
         attempt.quiz_id = data['quiz_id']
         attempt.date = data['date']
@@ -147,6 +172,58 @@ class QuizAttemptDetail(Resource):
     def delete(self, attempt_id):
         attempt = QuizAttempt.query.get_or_404(attempt_id)
         db.session.delete(attempt)
+        db.session.commit()
+        return '', 204
+
+@progress_ns.route('/')
+class QuizProgressList(Resource):
+    @progress_ns.marshal_list_with(progress_model)
+    def get(self):
+        progress = QuizProgress.query.all()
+        return progress
+
+    @progress_ns.expect(progress_model)
+    @progress_ns.marshal_with(progress_model, code=201)
+    def post(self):
+        data = request.json
+        errors = QuizProgressSchema.validate(data)
+        if errors:
+            return errors, 400
+        new_progress = QuizProgress(
+            attempt_id=data['attempt_id'],
+            quiz_id=data['quiz_id'],
+            completed=data['completed'],
+            score=data['score']
+        )
+        db.session.add(new_progress)
+        db.session.commit()
+        return new_progress, 201
+
+@progress_ns.route('/<int:progress_id>')
+class QuizProgressDetail(Resource):
+    @progress_ns.marshal_with(progress_model)
+    def get(self, progress_id):
+        progress = QuizProgress.query.get_or_404(progress_id)
+        return progress
+
+    @progress_ns.expect(progress_put_model)
+    @progress_ns.marshal_with(progress_model)
+    def put(self, progress_id):
+        progress = QuizProgress.query.get_or_404(progress_id)
+        data = request.json
+        errors = QuizProgressSchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
+        progress.attempt_id = data['attempt_id']
+        progress.quiz_id = data['quiz_id']
+        progress.completed = data['completed']
+        progress.score = data['score']
+        db.session.commit()
+        return progress
+
+    def delete(self, progress_id):
+        progress = QuizProgress.query.get_or_404(progress_id)
+        db.session.delete(progress)
         db.session.commit()
         return '', 204
 
@@ -161,6 +238,9 @@ class QuestionList(Resource):
     @question_ns.marshal_with(question_model, code=201)
     def post(self):
         data = request.json
+        errors = QuestionSchema.validate(data)
+        if errors:
+            return errors, 400
         new_question = Questions(
             quiz_id=data['quiz_id'],
             text=data['text']
@@ -181,6 +261,9 @@ class QuestionDetail(Resource):
     def put(self, question_id):
         question = Questions.query.get_or_404(question_id)
         data = request.json
+        errors = QuestionSchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
         question.quiz_id = data['quiz_id']
         question.text = data['text']
         db.session.commit()
@@ -203,6 +286,9 @@ class AnswerList(Resource):
     @answer_ns.marshal_with(answer_model, code=201)
     def post(self):
         data = request.json
+        errors = AnswerSchema.validate(data)
+        if errors:
+            return errors, 400
         new_answer = Answers(
             question_id=data['question_id'],
             text=data['text'],
@@ -224,6 +310,9 @@ class AnswerDetail(Resource):
     def put(self, answer_id):
         answer = Answers.query.get_or_404(answer_id)
         data = request.json
+        errors = AnswerSchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
         answer.question_id = data['question_id']
         answer.text = data['text']
         answer.is_correct = data['is_correct']
@@ -235,7 +324,6 @@ class AnswerDetail(Resource):
         db.session.delete(answer)
         db.session.commit()
         return '', 204
-    
 
 @story_ns.route('/')
 class StoryList(Resource):
@@ -248,6 +336,9 @@ class StoryList(Resource):
     @story_ns.marshal_with(story_model, code=201)
     def post(self):
         data = request.json
+        errors = StorySchema.validate(data)
+        if errors:
+            return errors, 400
         new_story = Story(
             quiz_id=data['quiz_id'],
             title=data['title'],
@@ -270,6 +361,9 @@ class StoryDetail(Resource):
     def put(self, story_id):
         story = Story.query.get_or_404(story_id)
         data = request.json
+        errors = StorySchema.validate(data, partial=True)
+        if errors:
+            return errors, 400
         story.quiz_id = data['quiz_id']
         story.title = data['title']
         story.author = data['author']
