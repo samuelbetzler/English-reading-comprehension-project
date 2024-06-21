@@ -18,16 +18,17 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-
     private final UserDetailsService userDetailsService;
+    private final CustomUserDetailsService customUserDetailsService;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
     @Autowired
     private TokenUtils tokenUtils;
 
     @Autowired
-    public WebSecurityConfig(UserDetailsService userDetailsService, JwtAuthorizationFilter jwtAuthorizationFilter) {
+    public WebSecurityConfig(UserDetailsService userDetailsService, JwtAuthorizationFilter jwtAuthorizationFilter, CustomUserDetailsService customUserDetailsService) {
         this.userDetailsService = userDetailsService;
         this.jwtAuthorizationFilter = jwtAuthorizationFilter;
+        this.customUserDetailsService = customUserDetailsService;
     }
 
     @Bean
@@ -55,7 +56,7 @@ public class WebSecurityConfig {
     @Bean
     public AuthenticationManager authManager(HttpSecurity http, PasswordEncoder passwordEncoder) throws Exception {
         return http.getSharedObject(AuthenticationManagerBuilder.class)
-                .userDetailsService(userDetailsService)
+                .userDetailsService(customUserDetailsService) // Use the CustomUserDetailsService
                 .passwordEncoder(passwordEncoder())
                 .and()
                 .build();

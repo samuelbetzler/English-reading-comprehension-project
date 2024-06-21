@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.example.demo.dto.UserDTO;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.CustomUserDetails;
@@ -39,28 +38,32 @@ public class UserService {
         return userRepository.findById(id);
     }
 
-    public User createUser(UserDTO userDTO) {
-        User user = new User();
-        user.setUsername(userDTO.getUsername());
-        user.setEmail(userDTO.getEmail());
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+    public User createUser(User user) {
+        // Encode the password before saving to the database
+        String encodedPassword = passwordEncoder.encode(user.getPassword());
+        user.setPassword(encodedPassword);
         return userRepository.save(user);
     }
 
-    public User updateUser(Long id, UserDTO userDTO) {
+    public User updateUser(Long id, User newUser) {
         return userRepository.findById(id)
                 .map(user -> {
-                    user.setUsername(userDTO.getUsername());
-                    user.setEmail(userDTO.getEmail());
-                    user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+                    user.setUsername(newUser.getUsername());
+                    user.setEmail(newUser.getEmail());
+
+                    // Encode the password before saving
+                    String encodedPassword = passwordEncoder.encode(newUser.getPassword());
+                    user.setPassword(encodedPassword);
+
                     return userRepository.save(user);
                 })
                 .orElseGet(() -> {
-                    User newUser = new User();
                     newUser.setId(id);
-                    newUser.setUsername(userDTO.getUsername());
-                    newUser.setEmail(userDTO.getEmail());
-                    newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+                    // Encode the password before saving
+                    String encodedPassword = passwordEncoder.encode(newUser.getPassword());
+                    newUser.setPassword(encodedPassword);
+
                     return userRepository.save(newUser);
                 });
     }
