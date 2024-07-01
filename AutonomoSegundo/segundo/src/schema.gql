@@ -1,0 +1,31 @@
+# ------------------------------------------------------
+# THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+# ------------------------------------------------------
+
+type Quiz {
+  id: Float!
+  difficultyLevel: String!
+  title: String!
+}
+
+type Query {
+  quizzes: [Quiz!]!
+  quiz(id: Int!): Quiz!
+}
+
+type Mutation {
+  createQuiz(createQuizInput: CreateQuizInput!): Quiz!
+  updateQuiz(id: Int!, updateQuizInput: UpdateQuizInput!): Quiz!
+  deleteQuiz(id: Int!): Boolean!
+}
+
+input CreateQuizInput {
+  difficultyLevel: String!
+  title: String!
+}
+
+input UpdateQuizInput {
+  difficultyLevel: String
+  title: String
+  id: Int!
+}

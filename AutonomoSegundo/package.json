@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "@nestjs/apollo": "^12.1.0",
+    "@nestjs/axios": "^3.0.2",
+    "@nestjs/graphql": "^12.1.1",
+    "@nestjs/typeorm": "^10.0.2",
+    "apollo-server-express": "^3.13.0",
+    "axios": "^1.7.2",
+    "class-validator": "^0.14.1",
+    "graphql": "^16.9.0",
+    "graphql-tools": "^9.0.1",
+    "typeorm": "^0.3.20"
+  }
+}
