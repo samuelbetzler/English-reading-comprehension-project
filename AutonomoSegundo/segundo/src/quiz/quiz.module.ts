@@ -9,9 +9,11 @@ import { UpdateQuizResolver } from './update/update-quiz.resolver';
 import { GetQuizResolver } from './get/get-quiz.resolver';
 import { DeleteQuizResolver } from './delete/delete-quiz.resolver';
 import { QuizHttpService } from './quiz.http.service';
-
+import { ReportsModule } from '../reports/reports.module';
+import { GenerateQuizReportService } from './reports/generate-quiz-report.service';
+import { GenerateQuizReportResolver } from './reports/generate-quiz-report.resolver';
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, ReportsModule ],
   providers: [
     CreateQuizService,
     UpdateQuizService,
@@ -22,6 +24,8 @@ import { QuizHttpService } from './quiz.http.service';
     GetQuizResolver,
     DeleteQuizResolver,
     QuizHttpService,
+    GenerateQuizReportService,
+    GenerateQuizReportResolver,
   ],
 })
 export class QuizModule {}
